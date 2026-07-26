@@ -1,0 +1,215 @@
+{
+  "entities": {
+    "Transaction": {
+      "title": "Finance Transaction",
+      "description": "Represents money in or out of the church registry",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["entrada", "saida", "transferencia"] },
+        "value": { "type": "number" },
+        "status": { "type": "string", "enum": ["Recebido", "Pago", "Pendente"] },
+        "payerRecipient": { "type": "string" },
+        "operationNature": { "type": "string" },
+        "costCenter": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "installments": { "type": "number" },
+        "currentInstallment": { "type": "number" },
+        "groupId": { "type": "string" },
+        "userId": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["date", "description", "type", "value", "status", "userId", "payerRecipient"]
+    },
+    "Event": {
+      "title": "Church Event",
+      "description": "Calendar event for services, meetings, etc.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "start": { "type": "string", "format": "date-time" },
+        "end": { "type": "string", "format": "date-time" },
+        "category": { "type": "string" },
+        "style": { "type": "object" },
+        "address": { "type": "string" },
+        "hasReminder": { "type": "boolean" },
+        "reminderMinutes": { "type": "number" },
+        "isRecurrent": { "type": "boolean" },
+        "recurrenceType": { "type": "string" },
+        "recurrenceUntil": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "userId": { "type": "string" },
+        "parentEventId": { "type": "string" }
+      },
+      "required": ["title", "start", "end"]
+    },
+    "Member": {
+      "title": "Church Member",
+      "description": "A person registered in the church and their contact info",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "telefone": { "type": "string" },
+        "status": { "type": "string" },
+        "idPlanilha": { "type": "number" },
+        "cpf": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nome", "userId"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "Company or individual providing services to the church",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "razaoSocial": { "type": "string" },
+        "nomeFantasia": { "type": "string" },
+        "tipo": { "type": "string" },
+        "cnpj": { "type": "string" },
+        "cpf": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["tipo", "userId"]
+    },
+    "Activity": {
+      "title": "Activity Log",
+      "description": "System log of user actions",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "type": { "type": "string" },
+        "timestamp": { "type": "object" }
+      },
+      "required": ["userId", "action"]
+    },
+    "Invoice": {
+      "title": "Credit Card Invoice",
+      "description": "Monthly summary of card expenditures",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "cardId": { "type": "string" },
+        "month": { "type": "number" },
+        "year": { "type": "number" },
+        "status": { "type": "string", "enum": ["Aberta", "Paga", "Atrasada"] },
+        "totalAmount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "closingDate": { "type": "string", "format": "date-time" },
+        "dueDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "cardId", "month", "year", "status", "totalAmount", "paidAmount"]
+    },
+    "CreditCard": {
+      "title": "Credit Card Configuration",
+      "description": "Details of a registered credit card",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "limit": { "type": "number" },
+        "closingDay": { "type": "number" },
+        "dueDay": { "type": "number" },
+        "label": { "type": "string" },
+        "bank": { "type": "string" },
+        "bgImage": { "type": "string" },
+        "isMain": { "type": "boolean" }
+      },
+      "required": ["userId", "limit", "closingDay", "dueDay", "label", "bank"]
+    },
+    "FinancialTransaction": {
+      "title": "Financial Transaction",
+      "description": "A specific purchase or movement in a credit card invoice",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "cardId": { "type": "string" },
+        "invoiceId": { "type": "string" },
+        "installments": { "type": "number" },
+        "currentInstallment": { "type": "number" },
+        "totalInstallments": { "type": "number" },
+        "purchaseGroupId": { "type": "string" }
+      },
+      "required": ["userId", "description", "amount", "category", "date", "cardId", "invoiceId"]
+    },
+    "ScaleConfig": {
+      "title": "Scale Configuration",
+      "description": "Saved settings for generating monthly scales",
+      "type": "object",
+      "properties": {
+        "selectedDays": { "type": "array" },
+        "selectedMemberIds": { "type": "array" },
+        "manualDeacons": { "type": "array" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["selectedDays", "selectedMemberIds", "manualDeacons"]
+    }
+  },
+  "firestore": {
+    "activities": {
+      "schema": "Activity",
+      "description": "System activity logs"
+    },
+    "church_transactions": {
+      "schema": "Transaction",
+      "description": "Primary financial ledger"
+    },
+    "invoices": {
+      "schema": "Invoice",
+      "description": "Credit card monthly invoices"
+    },
+    "financial_transactions": {
+      "schema": "FinancialTransaction",
+      "description": "Credit card transactions"
+    },
+    "credit_cards": {
+      "schema": "CreditCard",
+      "description": "Registered credit cards"
+    },
+    "pix_contacts": {
+      "schema": "object",
+      "description": "PIX Contacts for transfers"
+    },
+    "events": {
+      "schema": "Event",
+      "description": "Calendar events"
+    },
+    "members": {
+      "schema": "Member",
+      "description": "Member directory"
+    },
+    "suppliers": {
+      "schema": "Supplier",
+      "description": "Vendor directory"
+    },
+    "billing_config": {
+      "schema": "BillingConfig",
+      "description": "Payment method thresholds and due dates"
+    },
+    "church_data": {
+      "schema": "object",
+      "description": "Church institutional data and branding"
+    },
+    "sender_emails": {
+      "schema": "object",
+      "description": "Authorized email senders for the organization"
+    },
+    "scale_configurations": {
+      "schema": "ScaleConfig",
+      "description": "Saved scale settings per user"
+    }
+  }
+}

@@ -1,0 +1,93 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitives
+    function isSignedIn() { return request.auth != null; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+
+    // Entity Validations (Pillar 2)
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['date', 'desc', 'type', 'value', 'status', 'userId'])
+        && data.date is string && data.date.size() <= 64
+        && data.desc is string && data.desc.size() <= 200
+        && data.type in ['entrada', 'saida', 'transferencia']
+        && data.value is number
+        && data.status in ['Recebido', 'Pago', 'Pendente']
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidEvent(data) {
+      return data.keys().hasAll(['title', 'start', 'end', 'createdBy'])
+        && data.title is string && data.title.size() <= 100
+        && data.start is string && data.start.size() <= 64
+        && data.end is string && data.end.size() <= 64
+        && data.createdBy == request.auth.uid;
+    }
+
+    function isValidMember(data) {
+      return data.keys().hasAll(['nome', 'userId'])
+        && data.nome is string && data.nome.size() <= 128
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidSupplier(data) {
+      return data.keys().hasAll(['tipo', 'userId'])
+        && data.userId == request.auth.uid;
+    }
+
+    // Phase 4: Match blocks
+    
+    match /church_transactions/{transactionId} {
+      allow create: if isVerified() && isValidId(transactionId) && isValidTransaction(incoming());
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId); // Pillar 8: Query Enforcer
+      allow update: if isOwner(existing().userId) 
+        && isValidTransaction(incoming())
+        && (incoming().userId == existing().userId) // Immutable owner
+        && (incoming().diff(existing()).affectedKeys().hasAny(['status', 'value', 'desc', 'updatedAt', 'date', 'shop', 'category', 'center']));
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /church_events/{eventId} {
+      allow create: if isVerified() && isValidId(eventId) && isValidEvent(incoming());
+      allow get: if isOwner(existing().createdBy);
+      allow list: if isOwner(resource.data.createdBy);
+      allow update: if isOwner(existing().createdBy) 
+        && isValidEvent(incoming())
+        && (incoming().createdBy == existing().createdBy);
+      allow delete: if isOwner(existing().createdBy);
+    }
+
+    match /members/{memberId} {
+      allow create: if isVerified() && isValidId(memberId) && isValidMember(incoming());
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId);
+      allow update: if isOwner(existing().userId) && isValidMember(incoming());
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /suppliers/{supplierId} {
+      allow create: if isVerified() && isValidId(supplierId) && isValidSupplier(incoming());
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId);
+      allow update: if isOwner(existing().userId) && isValidSupplier(incoming());
+      allow delete: if isOwner(existing().userId);
+    }
+
+    // Special: Activity Logs
+    match /church_activities/{activityId} {
+      allow create: if isVerified() && isValidId(activityId) && incoming().userId == request.auth.uid;
+      allow list: if isOwner(resource.data.userId);
+    }
+  }
+}

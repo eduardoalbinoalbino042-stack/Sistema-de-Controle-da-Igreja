@@ -1,0 +1,196 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Primitives ---
+    function isSignedIn() { return request.auth != null; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+
+    // --- Entity Validations ---
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['date', 'description', 'type', 'value', 'status', 'userId', 'payerRecipient'])
+        && data.date is string && data.date.size() <= 64
+        && data.description is string && data.description.size() <= 2000
+        && data.type in ['entrada', 'saida', 'transferencia']
+        && data.value is number
+        && data.status in ['Recebido', 'Pago', 'Pendente']
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidEvent(data) {
+      return data.keys().hasAll(['title', 'start', 'end'])
+        && data.title is string && data.title.size() <= 500
+        && data.start is string && data.start.size() <= 128
+        && data.end is string && data.end.size() <= 128;
+    }
+
+    function isValidInvoice(data) {
+      return data.keys().hasAll(['userId', 'cardId', 'month', 'year', 'status', 'totalAmount', 'paidAmount'])
+        && data.userId == request.auth.uid
+        && data.status in ['Aberta', 'Paga', 'Atrasada']
+        && data.totalAmount is number
+        && data.paidAmount is number;
+    }
+
+    function isValidFinancialTransaction(data) {
+      return data.keys().hasAll(['userId', 'description', 'amount', 'category', 'date', 'cardId', 'invoiceId'])
+        && data.userId == request.auth.uid
+        && data.amount is number
+        && data.date is string && data.date.size() <= 128;
+    }
+
+    function isValidCreditCard(data) {
+      return data.keys().hasAll(['userId', 'limit', 'closingDay', 'dueDay', 'label', 'bank'])
+        && data.userId == request.auth.uid
+        && data.limit is number;
+    }
+
+    function isValidMember(data) {
+      return data.keys().hasAll(['nome', 'userId'])
+        && data.nome is string && data.nome.size() <= 500
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidSupplier(data) {
+      return data.keys().hasAll(['tipo', 'userId'])
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidActivity(data) {
+      return data.keys().hasAll(['userId', 'action', 'timestamp'])
+        && data.userId == request.auth.uid
+        && data.action is string && data.action.size() <= 1000;
+    }
+
+    function isValidScaleConfig(data) {
+      return data.keys().hasAll(['selectedDays', 'selectedMemberIds', 'manualDeacons'])
+        && data.selectedDays is list
+        && data.selectedMemberIds is list
+        && data.manualDeacons is list
+        && (data.updatedAt is string || !data.keys().hasAny(['updatedAt']));
+    }
+
+    // --- Collections ---
+
+    match /church_transactions/{txId} {
+      allow create: if isVerified() && isValidId(txId) && isValidTransaction(incoming());
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId);
+      allow update: if isOwner(existing().userId) 
+        && isValidTransaction(incoming())
+        && incoming().userId == existing().userId
+        && (incoming().diff(existing()).affectedKeys().hasAny(['status', 'value', 'description', 'updatedAt', 'date', 'payerRecipient', 'operationNature', 'costCenter', 'paymentMethod', 'installments', 'currentInstallment', 'groupId']));
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /invoices/{invoiceId} {
+      allow create: if isVerified() && isValidId(invoiceId) && isValidInvoice(incoming());
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId);
+      allow update: if isOwner(existing().userId)
+        && isValidInvoice(incoming())
+        && incoming().userId == existing().userId
+        && (incoming().diff(existing()).affectedKeys().hasAny(['status', 'totalAmount', 'paidAmount', 'closingDate', 'dueDate']));
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /financial_transactions/{txId} {
+      allow create: if isVerified() && isValidId(txId) && isValidFinancialTransaction(incoming());
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId);
+      allow update: if isOwner(existing().userId)
+        && isValidFinancialTransaction(incoming())
+        && incoming().userId == existing().userId
+        && (incoming().diff(existing()).affectedKeys().hasAny(['amount', 'description', 'category', 'costCenter', 'details', 'date']));
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /credit_cards/{cardId} {
+      allow create: if isVerified() && isValidId(cardId) && isValidCreditCard(incoming());
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId);
+      allow update: if isOwner(existing().userId)
+        && isValidCreditCard(incoming())
+        && incoming().userId == existing().userId
+        && (incoming().diff(existing()).affectedKeys().hasAny(['limit', 'closingDay', 'dueDay', 'label', 'bank', 'bgImage', 'isMain']));
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /pix_contacts/{contactId} {
+      allow create: if isVerified() && isValidId(contactId) && incoming().userId == request.auth.uid;
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId);
+      allow update: if isOwner(existing().userId)
+        && (incoming().diff(existing()).affectedKeys().hasAny(['name', 'pixKey', 'avatarSeed']));
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /events/{eventId} {
+      allow create: if isVerified() && isValidId(eventId) && isValidEvent(incoming()) && (incoming().userId == request.auth.uid || incoming().createdBy == request.auth.uid);
+      allow get: if isOwner(existing().userId) || isOwner(existing().createdBy);
+      allow list: if isOwner(resource.data.userId) || isOwner(resource.data.createdBy);
+      allow update: if (isOwner(existing().userId) || isOwner(existing().createdBy))
+        && isValidEvent(incoming())
+        && (incoming().diff(existing()).affectedKeys().hasAny(['title', 'start', 'end', 'description', 'category', 'style', 'address', 'hasReminder', 'reminderMinutes', 'isRecurrent', 'recurrenceType', 'recurrenceUntil', 'isCompleted', 'googleEventId', 'googleAccountEmail']));
+      allow delete: if isOwner(existing().userId) || isOwner(existing().createdBy);
+    }
+
+    match /members/{memberId} {
+      allow create: if isVerified() && isValidId(memberId) && isValidMember(incoming());
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId);
+      allow update: if isOwner(existing().userId)
+        && isValidMember(incoming())
+        && (incoming().diff(existing()).affectedKeys().hasAny(['nome', 'email', 'telefone', 'status', 'idPlanilha', 'cpf', 'cargo', 'fotoUrl', 'dataNascimento', 'dataRecebimento', 'rg', 'observacoes']));
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /suppliers/{supplierId} {
+      allow create: if isVerified() && isValidId(supplierId) && isValidSupplier(incoming());
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId);
+      allow update: if isOwner(existing().userId)
+        && isValidSupplier(incoming())
+        && (incoming().diff(existing()).affectedKeys().hasAny(['nome', 'razaoSocial', 'nomeFantasia', 'tipo', 'cnpj', 'cpf', 'telefone', 'email', 'endereco']));
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /activities/{activityId} {
+      allow create: if isVerified() && isValidId(activityId) && isValidActivity(incoming());
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId);
+    }
+
+    match /church_data/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /sender_emails/{emailId} {
+      allow read: if isOwner(resource.data.userId);
+      allow write: if isOwner(resource.data.userId) || (request.method == 'create' && incoming().userId == request.auth.uid);
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /billing_config/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /scale_configurations/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && isValidScaleConfig(incoming());
+    }
+  }
+}
