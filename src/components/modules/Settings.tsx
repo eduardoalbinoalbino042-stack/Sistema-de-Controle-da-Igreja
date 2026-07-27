@@ -331,6 +331,8 @@ export default function Settings() {
         setGoogleAccounts(data.googleAccounts || []);
         setGoogleStatus(data.google ? 'connected' : 'disconnected');
         setGoogleConfigured(data.config?.google || false);
+        if (data.config?.googleId) setGoogleId(data.config.googleId);
+        if (data.config?.googleSecret) setGoogleSecret(data.config.googleSecret);
         if (data.config?.mapsKey) setMapsKey(data.config.mapsKey);
       }
     } catch (err) {
@@ -363,10 +365,11 @@ export default function Settings() {
         })
       });
       if (res.ok) {
-        showSuccess('Sucesso!', 'Configurações salvas corretamente.');
+        showSuccess('Chaves Salvas!', 'As credenciais do Google foram salvas com sucesso. Agora vá até a aba "Conectar Contas" para autenticar sua conta.');
         checkStatus();
       } else {
-        showError('Erro', 'Não foi possível salvar as chaves no servidor.');
+        const errData = await res.json().catch(() => ({}));
+        showError('Erro ao Salvar', errData.error || 'Não foi possível salvar as chaves no servidor.');
       }
     } catch (err) {
       showError('Erro', 'Ocorreu um erro de conexão.');

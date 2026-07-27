@@ -353,29 +353,40 @@ async function startServer() {
       googleAccounts: googleAccounts.map((a: any) => a.email),
       config: {
         google: !!keys.googleId && !!keys.googleSecret,
+        googleId: keys.googleId || '',
+        googleSecret: keys.googleSecret || '',
         maps: !!keys.mapsKey,
-        mapsKey: keys.mapsKey // Expose the key to the client
+        mapsKey: keys.mapsKey || '' // Expose the key to the client
       }
     });
   });
 
   // Save Config Keys
   app.post('/api/config/keys', (req, res) => {
-    const { googleId, googleSecret, mapsKey } = req.body;
-    
-    // Read current
-    let secrets: any = {};
-    if (fs.existsSync(SECRETS_FILE)) {
-      secrets = JSON.parse(fs.readFileSync(SECRETS_FILE, 'utf8'));
+    try {
+      const { googleId, googleSecret, mapsKey } = req.body;
+      
+      // Read current
+      let secrets: any = {};
+      if (fs.existsSync(SECRETS_FILE)) {
+        try {
+          secrets = JSON.parse(fs.readFileSync(SECRETS_FILE, 'utf8'));
+        } catch (e) {
+          secrets = {};
+        }
+      }
+
+      // Update only sent ones
+      if (googleId !== undefined) secrets.GOOGLE_CLIENT_ID = googleId.trim();
+      if (googleSecret !== undefined) secrets.GOOGLE_CLIENT_SECRET = googleSecret.trim();
+      if (mapsKey !== undefined) secrets.GOOGLE_MAPS_PLATFORM_KEY = mapsKey.trim();
+
+      fs.writeFileSync(SECRETS_FILE, JSON.stringify(secrets, null, 2));
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error('Erro ao salvar chaves:', err);
+      res.status(500).json({ error: err?.message || 'Erro interno ao salvar as chaves.' });
     }
-
-    // Update only sent ones
-    if (googleId !== undefined) secrets.GOOGLE_CLIENT_ID = googleId;
-    if (googleSecret !== undefined) secrets.GOOGLE_CLIENT_SECRET = googleSecret;
-    if (mapsKey !== undefined) secrets.GOOGLE_MAPS_PLATFORM_KEY = mapsKey;
-
-    fs.writeFileSync(SECRETS_FILE, JSON.stringify(secrets, null, 2));
-    res.json({ success: true });
   });
 
   app.post('/api/auth/google/logout', (req, res) => {

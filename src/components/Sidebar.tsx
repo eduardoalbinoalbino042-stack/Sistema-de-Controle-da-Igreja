@@ -68,10 +68,10 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, activeItem, s
           else setActiveItem(item.id);
         }}
         className={`
-          relative w-full flex items-center gap-4 px-4 py-2.5 my-[1px] transition-all duration-300 ease-in-out group outline-none border-y border-transparent
+          relative w-full flex items-center gap-4 px-4 py-2.5 my-[1px] transition-all duration-300 ease-in-out group outline-none border-y border-transparent border-l-[4px]
           ${isActive 
-            ? 'text-[#00f5ff] bg-gradient-to-r from-[#00f5ff]/20 to-transparent border-l-[4px] border-r-[1.5px] border-l-[#00f5ff] border-r-[#00f5ff]/40 rounded-sm shadow-[inset_0_0_10px_rgba(0,245,255,0.1)]' 
-            : `${theme === 'light' ? 'text-slate-300' : 'text-slate-500'} hover:text-[#00f5ff] hover:bg-white/5 rounded-sm`}
+            ? 'text-[#00f5ff] bg-gradient-to-r from-[#00f5ff]/20 to-transparent border-r-[1.5px] border-l-[#00f5ff] border-r-[#00f5ff]/40 rounded-sm shadow-[inset_0_0_10px_rgba(0,245,255,0.1)]' 
+            : `border-l-transparent ${theme === 'light' ? 'text-slate-300' : 'text-slate-500'} hover:text-[#00f5ff] hover:bg-white/5 hover:border-l-slate-400 dark:hover:border-l-slate-500/80 rounded-sm`}
         `}
       >
         <div className={`
@@ -177,10 +177,10 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, activeItem, s
           <button
             onClick={() => setActiveItem('configuracoes')}
             className={`
-              relative w-full flex items-center gap-4 px-4 py-2.5 my-[1px] transition-all duration-300 ease-in-out group outline-none border-y border-transparent
+              relative w-full flex items-center gap-4 px-4 py-2.5 my-[1px] transition-all duration-300 ease-in-out group outline-none border-y border-transparent border-l-[4px]
               ${activeItem === 'configuracoes' 
-                ? 'text-[#00f5ff] bg-gradient-to-r from-[#00f5ff]/20 to-transparent border-l-[4px] border-r-[1.5px] border-l-[#00f5ff] border-r-[#00f5ff]/40 rounded-sm shadow-[inset_0_0_10px_rgba(0,245,255,0.1)]' 
-                : `${theme === 'light' ? 'text-slate-300' : 'text-slate-500'} hover:text-[#00f5ff] hover:bg-white/5 rounded-sm`}
+                ? 'text-[#00f5ff] bg-gradient-to-r from-[#00f5ff]/20 to-transparent border-r-[1.5px] border-l-[#00f5ff] border-r-[#00f5ff]/40 rounded-sm shadow-[inset_0_0_10px_rgba(0,245,255,0.1)]' 
+                : `border-l-transparent ${theme === 'light' ? 'text-slate-300' : 'text-slate-500'} hover:text-[#00f5ff] hover:bg-white/5 hover:border-l-slate-400 dark:hover:border-l-slate-500/80 rounded-sm`}
             `}
           >
             <div className={`
@@ -208,8 +208,8 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, activeItem, s
             <button
               onClick={handleInstallClick}
               className={`
-                relative w-full flex items-center gap-4 px-4 py-2.5 my-3 transition-all duration-300 ease-in-out group outline-none border-y border-transparent
-                text-emerald-400 hover:text-[#00f5ff] hover:bg-emerald-500/10 rounded-sm
+                relative w-full flex items-center gap-4 px-4 py-2.5 my-3 transition-all duration-300 ease-in-out group outline-none border-y border-transparent border-l-[4px] border-l-transparent
+                text-emerald-400 hover:text-[#00f5ff] hover:bg-emerald-500/10 hover:border-l-emerald-500/80 rounded-sm
               `}
             >
               <div className="shrink-0 transition-all duration-300 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
